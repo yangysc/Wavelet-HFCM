@@ -1,5 +1,6 @@
 % generate multi scale waves
 clear all
+close
 clc
 %% experimental data set
 % dataset 1: enrollment
@@ -31,11 +32,31 @@ dataset = (dataset - max(dataset)) ./ (max(dataset) - min(dataset));
 %dataset = dataset(1:1024);
 pkg load ltfat
 max_level = floor(log2(length(dataset)));
-J = max_level;  % level 5
+J = max_level - 1;  % level 5
 multi_data = ufwt(dataset, 'db1', J)';
-hold on
-for i = 1: 3
-		plot(multi_data(i, :))
-end
+%hold on
+%for i = 1: 3
+%		plot(multi_data(i, :))
+%end
 save -6 multi_data.mat multi_data dataset
 
+reversed_dataset = iufwt(multi_data', 'db1', J);
+hold on
+plot(reversed_dataset, 'r*')
+plot(dataset)
+title('all data set')
+
+% split dataset into train_data and test_data
+ratio = 0.8;
+Order = 4;
+len_train_data  = floor(length(dataset) * ratio);
+train_data = dataset(1:len_train_data);
+ multi_train_data = ufwt(train_data, 'db1', J)';
+%multi_train_data =  multi_data(:, Order:len_train_data);
+reveresed_train_data = iufwt(multi_train_data(:, Order + 1:end) ', 'db1', J)';
+figure()
+hold on
+plot(reveresed_train_data, 'r*--')
+plot(train_data(Order+1:end))
+legend('predicted', 'true')
+title('train data')
