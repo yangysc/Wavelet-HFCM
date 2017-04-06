@@ -5,9 +5,13 @@ import pandas as pd
 # import statsmodels.api as sm
 import FuzzyCluster as fc
 from FCMs import *
-from statsmodels.tsa.seasonal import seasonal_decompose
+# from statsmodels.tsa.seasonal import seasonal_decompose
 from sklearn import linear_model
 from sklearn.linear_model import ridge_regression
+import lightning.regression as rg
+
+
+
 
 def splitData(dataset, ratio=0.85):
     len_train_data = np.int(len(dataset) * ratio)
@@ -42,10 +46,10 @@ def main():
     # load time series data
 
     # data set 2: TAIEX
-    # TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
-    # dataset = TAIEX.values.flatten()
+    TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
+    dataset = TAIEX.values.flatten()
     # data set 3: sunspot
-    dataset = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()[:, 1]
+    # dataset = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()[:, 1]
     # series = pd.read_csv('sunspot.csv', delimiter=';').values[:, 1]
     # df = pd.DataFrame(series)
     # result = seasonal_decompose(series, model='additive', freq=12)
@@ -64,7 +68,7 @@ def main():
     # dataset = np.linspace(0, 5, 100)
     # dataset = [i**2 for i in dataset]
 
-    # dataset = np.diff(dataset, 2)
+    dataset = np.diff(dataset, 1)
     minV = np.min(dataset)
     maxV = np.max(dataset)
     dataset = (dataset - minV) / (maxV - minV)
@@ -76,7 +80,7 @@ def main():
     # plt.show()
 
     # number of nodes
-    Nc = 8
+    Nc = 10
     # order of HFCMs
     Order = 4
     # steepness of sigmoid function
@@ -109,10 +113,22 @@ def main():
     # nvar = len_train_data - Order
     # 30 independent runs
     nTotalRun = 1
-
+    # reg = rg.SDCARegressor(loss='absolute', alpha=0.0001, l1_ratio=1)
+    # reg = linear_model.LinearRegression(fit_intercept=False)
+    # reg = rg.FistaRegressor(penalty='l1')
+    reg = linear_model.LinearRegression()  # regressor()
     for nrun in range(nTotalRun):
         # enet = ElasticNet(alpha=.1, l1_ratio=0.7)
-        reg = linear_model.LinearRegression(fit_intercept=False)
+        # from sklearn.linear_model import Lasso
+
+        # alpha = 0.001
+        # lasso = Lasso(alpha=alpha)
+
+        # # ElasticNet
+        # from sklearn.linear_model import ElasticNet
+        #
+        # enet = ElasticNet(alpha=alpha, l1_ratio=0.3)
+
         # solving Ax = b to obtain x(x is the weight vector corresponding to certain node)
         # A = np.zeros(shape=(nvar, Nc * Order))
         # b = np.zeros(shape=(nvar, 1))
@@ -123,8 +139,11 @@ def main():
             samples = create_dataset(U_train, belta, Order, node_solved)
             # delete last "Order" rows (all zeros)
             samples_train[node_solved] = samples[:-Order, :]
+            # enet.fit(samples[:, :-1], samples[:, -1])
+            # W_learned[node_solved, :] = enet.coef_
             reg.fit(samples[:, :-1], samples[:, -1])
             W_learned[node_solved, :] = reg.coef_
+            # W_learned[node_solved, :] = lasso.coef_
         steepness = np.max(np.abs(W_learned), axis=1)
         for i in range(Nc):
             if steepness[i] > 1:
@@ -135,38 +154,42 @@ def main():
         trainPredict = np.zeros(shape=(Nc, len_train_data - Order))
         for i in range(Nc):
             trainPredict[i, :] = predict(samples_train[i], W_learned[i, :], steepness[i], belta)
-        fig1 = plt.figure()
-        ax1 = fig1.add_subplot(211)
-        # fig1.hold()
-        for i in range(Nc):
-            ax1.plot(U_train[i, Order:])
-
-        ax1.set_xlabel('n')
-        ax1.set_title('Membership of train data')
-        ax2 = fig1.add_subplot(212)
-        for i in range(Nc):
-            ax2.plot(trainPredict[i, :])
-        ax2.set_xlabel('n')
-        ax2.set_title('Membership of predicted train data')
-        fig1.tight_layout()
+        # fig1 = plt.figure()
+        # ax1 = fig1.add_subplot(211)
+        # # fig1.hold()
+        # for i in range(Nc):
+        #     ax1.plot(U_train[i, Order:])
+        #
+        # ax1.set_xlabel('n')
+        # ax1.set_title('Membership of train data')
+        # ax2 = fig1.add_subplot(212)
+        # for i in range(Nc):
+        #     ax2.plot(trainPredict[i, :])
+        # ax2.set_xlabel('n')
+        # ax2.set_title('Membership of predicted train data')
+        # fig1.tight_layout()
         # plt.show()
 
 
         # reconstruct part
         # use train data to obtain optimal weights of all nodes to A_{new}
         _, len_trainPredict = trainPredict.shape
-        A_train = np.zeros(shape=(len_trainPredict - Order, Order * Nc))
+        A_train = np.zeros(shape=(len_trainPredict - Order, Order * Nc + 1))
         b_train = np.zeros(shape=(len_trainPredict - Order, 1))
 
         for m in range(Order, len_trainPredict):  # iterate each sample
             for n_idx in range(Nc):
                 for order in range(Order):
-                    A_train[m-Order, n_idx * Order + order] = trainPredict[n_idx, m-order]
+                    A_train[m-Order, n_idx * Order + order + 1] = U_train[n_idx, m + Order - order]  # trainPredict[n_idx, m-order]
             b_train[m-Order, 0] = reverseFunc(train_data[m+Order], belta)
+        A_train[:, 0] = 1
         # weights of node A_{new} of train data
-        reg.fit(A_train, b_train)
-        x_new = reg.coef_
-
+        # reg.fit(A_train, b_train)
+        # x_new = reg.coef_
+        reg_new = rg.FistaRegressor()
+        x_new = reg_new.fit(A_train, b_train).coef_
+        # enet.fit(A_train, b_train)
+        # x_new = enet.coef_
         # calculate errors in train data
         new_trainPredict = np.matrix(A_train) * np.matrix(x_new).T
         # need to be transformed by sigmoid function
@@ -203,27 +226,27 @@ def main():
             testPredict[i, :] = predict(samples_test[i], W_learned[i, :], steepness[i], belta)
 
 
-        fig3 = plt.figure()
-        ax31 = fig3.add_subplot(211)
-        for i in range(Nc):
-            ax31.plot(U_test[i, Order:])
-        ax31.set_xlabel('n')
-        ax31.set_title('Membership of test data')
-
-        ax32 = fig3.add_subplot(212)
-        for i in range(Nc):
-            ax32.plot(testPredict[i, :])
-        ax32.set_xlabel('n')
-        ax32.set_title('Membership of predicted test data')
-        fig3.tight_layout()
+        # fig3 = plt.figure()
+        # ax31 = fig3.add_subplot(211)
+        # for i in range(Nc):
+        #     ax31.plot(U_test[i, Order:])
+        # ax31.set_xlabel('n')
+        # ax31.set_title('Membership of test data')
+        #
+        # ax32 = fig3.add_subplot(212)
+        # for i in range(Nc):
+        #     ax32.plot(testPredict[i, :])
+        # ax32.set_xlabel('n')
+        # ax32.set_title('Membership of predicted test data')
+        # fig3.tight_layout()
 
         # transform predicted train data set into real space
-        A_test = np.zeros(shape=(len_test_data - 2*Order, Order*Nc))
+        A_test = np.zeros(shape=(len_test_data - 2*Order, Order*Nc + 1))
         for m in range(Order,  len_test_data-Order):  # iterate each test sample
             for n_idx in range(Nc):
                 for order in range(Order):
-                    A_test[m-Order, n_idx*Order+order] = testPredict[n_idx, m-order]
-
+                    A_test[m-Order, n_idx*Order+order+1] = testPredict[n_idx, m-order]
+        A_test[:, 0] = 1
         # prediction on test data
         new_testPredict = np.matrix(A_test) * np.matrix(x_new).T
         for i in range(len(new_testPredict)):
@@ -237,42 +260,13 @@ def main():
         ax41.set_xlabel('Year')
         ax41.set_title('time series(test dataset)')
         ax41.legend()
+        print("steepness are")
         print(steepness)
         plt.show()
         print('Waiting for debug')
 
 
 
-def earthTest():
-    import numpy
-    from pyearth import Earth
-    from matplotlib import pyplot
-
-    # Create some fake data
-    numpy.random.seed(0)
-    m = 1000
-    n = 10
-    X = 80 * numpy.random.uniform(size=(m, n)) - 40
-    y = numpy.abs(X[:, 6] - 4.0) + 1 * numpy.random.normal(size=m)
-
-    # Fit an Earth model
-    model = Earth()
-    x = np.array([i for i in range(len(y))])
-    model.fit(x, y)
-
-    # Print the model
-    print(model.trace())
-    print(model.summary())
-
-    # Plot the model
-    y_hat = model.predict(X)
-    pyplot.figure()
-    pyplot.plot(X[:, 6], y, 'r.')
-    pyplot.plot(X[:, 6], y_hat, 'b.')
-    pyplot.xlabel('x_6')
-    pyplot.ylabel('y')
-    pyplot.title('Simple Earth Example')
-    pyplot.show()
 
 
 if __name__ == '__main__':

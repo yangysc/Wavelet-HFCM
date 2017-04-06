@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 29 16:34:22 2017
-
-@author: shanchao
-"""
-
 import numpy as np
 import scipy as si
 import matplotlib.pyplot as plt
@@ -50,8 +42,8 @@ def main():
     # load time series data
 
     # data set 2: TAIEX
-    TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
-    dataset = TAIEX.values.flatten()
+    # TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
+    # dataset = TAIEX.values.flatten()
     # data set 3: sunspot
     # dataset = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()[:, 1]
     # series = pd.read_csv('sunspot.csv', delimiter=';').values[:, 1]
@@ -61,20 +53,26 @@ def main():
     # normalize data into [0, 1]
     # dateset 5: seasonal
     # dataset = pd.read_csv('Seasonal10-9.csv').as_matrix()[:, 0]
+
+    # dataset 6: sales of shampoo over a three year
+    # dataset = pd.read_csv('sales-of-shampoo-over-a-three-ye.csv', skiprows=1).as_matrix()[:, 1]
+    # detrending by difference time series
     # if np.all(dataset > 0):
     #     dataset = np.diff(np.log(dataset), 1)
     # else:
     #     dataset = np.diff(dataset, 1)
+    dataset = 2 * np.linspace(0, 100, 100) + 1
+
+    # dataset = np.diff(dataset, 1)
     minV = np.min(dataset)
     maxV = np.max(dataset)
     dataset = (dataset - minV) / (maxV - minV)
-    dataset = 1 - dataset
+    # dataset = 1 - dataset
     # # plot data
     # plt.plot(data)
     # plt.title('sunspot time series')
     # plt.xlabel('year')
     # plt.show()
-
 
     # number of nodes
     Nc = 10
@@ -87,7 +85,7 @@ def main():
     uppBnd = 1
 
     # partition dataset into train set and test set
-    ratio = 0.7
+    ratio = 0.6
     if len(dataset) > 2 * Order / (1 - ratio):
         train_data, test_data = splitData(dataset, ratio)
     else:
@@ -95,8 +93,18 @@ def main():
         test_data = dataset[:]
     len_train_data = len(train_data)
     len_test_data = len(test_data)
-    U_train, center = fc.fcm(train_data, Nc)
 
+    U_train, center = fc.fcm(train_data, Nc)
+    # calculate membership of test data to the
+    # prototype obtained in training state
+    # center = np.linspace(0.8, 0.8, Nc)
+    # expo = 2
+    # dist = np.zeros(shape=(Nc, len_train_data))
+    # for i in range(Nc):
+    #     for j in range(len_train_data):
+    #         dist[i, j] = np.sqrt(np.power(center[i] - train_data[j], 2))
+    # tmp = np.power(dist, -2 / (expo - 1))
+    # U_train = tmp / np.sum(tmp, axis=0)
     # nvar = len_train_data - Order
     # 30 independent runs
     nTotalRun = 1
@@ -184,6 +192,7 @@ def main():
                 dist[i, j] = np.sqrt(np.power(center[i] - test_data[j], 2))
         tmp = np.power(dist, -2/(expo-1))
         U_test = tmp / np.sum(tmp, axis=0)
+        # U_test, _ = fc.fcm(test_data, Nc)
 
         testPredict = np.zeros(shape=(Nc, len_test_data - Order))
         samples_test = {}
@@ -192,7 +201,7 @@ def main():
             samples_test[i] = samples[:-Order, :]  # delete the last "Order' rows(all zeros)
             testPredict[i, :] = predict(samples_test[i], W_learned[i, :], steepness[i], belta)
 
-   
+
         fig3 = plt.figure()
         ax31 = fig3.add_subplot(211)
         for i in range(Nc):
@@ -228,43 +237,60 @@ def main():
         ax41.set_title('time series(test dataset)')
         ax41.legend()
         plt.show()
+
+
+
+def earthTest():
+    import numpy
+    from pyearth import Earth
+    from matplotlib import pyplot
+
+    # Create some fake data
+    numpy.random.seed(0)
+    m = 1000
+    n = 10
+    X = 80 * numpy.random.uniform(size=(m, n)) - 40
+    y = numpy.abs(X[:, 6] - 4.0) + 1 * numpy.random.normal(size=m)
+
+    # Fit an Earth model
+    model = Earth()
+    x = np.array([i for i in range(len(y))])
+    model.fit(x, y)
+
+    # Print the model
+    print(model.trace())
+    print(model.summary())
+
+    # Plot the model
+    y_hat = model.predict(X)
+    pyplot.figure()
+    pyplot.plot(X[:, 6], y, 'r.')
+    pyplot.plot(X[:, 6], y_hat, 'b.')
+    pyplot.xlabel('x_6')
+    pyplot.ylabel('y')
+    pyplot.title('Simple Earth Example')
+    pyplot.show()
 
 
 if __name__ == '__main__':
-
-       # load time series data
-
-    # data set 2: TAIEX
+    # dataset = 2 * np.linspace(0, 100, 100) + 1 + np.random.randn()
     TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
     dataset = TAIEX.values.flatten()
-    # data set 3: sunspot
-    # dataset = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()[:, 1]
-    # series = pd.read_csv('sunspot.csv', delimiter=';').values[:, 1]
-    # df = pd.DataFrame(series)
-    # result = seasonal_decompose(series, model='additive', freq=12)
-    # dataset = result.resid[6:-7]
-    # normalize data into [0, 1]
-    # dateset 5: seasonal
-    # dataset = pd.read_csv('Seasonal10-9.csv').as_matrix()[:, 0]
-    # if np.all(dataset > 0):
-    #     dataset = np.diff(np.log(dataset), 1)
-    # else:
-    #     dataset = np.diff(dataset, 1)
+    dataset = np.diff(dataset, 1)
     minV = np.min(dataset)
     maxV = np.max(dataset)
     dataset = (dataset - minV) / (maxV - minV)
-#    dataset = 1 - dataset
+    # dataset = 1 - dataset
     # # plot data
     # plt.plot(data)
     # plt.title('sunspot time series')
     # plt.xlabel('year')
     # plt.show()
 
-
     # number of nodes
     Nc = 10
     # order of HFCMs
-    Order = 4
+    Order = 1
     # steepness of sigmoid function
     belta = 1
     # range of weights
@@ -272,7 +298,7 @@ if __name__ == '__main__':
     uppBnd = 1
 
     # partition dataset into train set and test set
-    ratio = 0.7
+    ratio = 0.6
     if len(dataset) > 2 * Order / (1 - ratio):
         train_data, test_data = splitData(dataset, ratio)
     else:
@@ -280,8 +306,18 @@ if __name__ == '__main__':
         test_data = dataset[:]
     len_train_data = len(train_data)
     len_test_data = len(test_data)
-    U_train, center = fc.fcm(train_data, Nc)
 
+    U_train, center = fc.fcm(train_data, Nc)
+    # calculate membership of test data to the
+    # prototype obtained in training state
+    # center = np.linspace(0.8, 0.8, Nc)
+    # expo = 2
+    # dist = np.zeros(shape=(Nc, len_train_data))
+    # for i in range(Nc):
+    #     for j in range(len_train_data):
+    #         dist[i, j] = np.sqrt(np.power(center[i] - train_data[j], 2))
+    # tmp = np.power(dist, -2 / (expo - 1))
+    # U_train = tmp / np.sum(tmp, axis=0)
     # nvar = len_train_data - Order
     # 30 independent runs
     nTotalRun = 1
@@ -369,6 +405,7 @@ if __name__ == '__main__':
                 dist[i, j] = np.sqrt(np.power(center[i] - test_data[j], 2))
         tmp = np.power(dist, -2/(expo-1))
         U_test = tmp / np.sum(tmp, axis=0)
+        # U_test, _ = fc.fcm(test_data, Nc)
 
         testPredict = np.zeros(shape=(Nc, len_test_data - Order))
         samples_test = {}
@@ -376,6 +413,7 @@ if __name__ == '__main__':
             samples = create_dataset(U_test, belta, Order, i)
             samples_test[i] = samples[:-Order, :]  # delete the last "Order' rows(all zeros)
             testPredict[i, :] = predict(samples_test[i], W_learned[i, :], steepness[i], belta)
+
 
         fig3 = plt.figure()
         ax31 = fig3.add_subplot(211)
@@ -403,9 +441,6 @@ if __name__ == '__main__':
         for i in range(len(new_testPredict)):
             new_testPredict[i] = transferFunc(new_testPredict[i], belta)
 
-        
-#        print('Mean of predicted test data is {0}'.format(np.mean(new_testPredict[int((len_test_data - 2 * Order)/ 2):])))
-#        print('In theory the value above is {0}'.format(transferFunc(0, belta)))
         fig4 = plt.figure()
         ax41 = fig4.add_subplot(111)
         ax41.plot(np.array(test_data[2*Order:]), 'ro--', label='the origindal data')
@@ -415,5 +450,3 @@ if __name__ == '__main__':
         ax41.set_title('time series(test dataset)')
         ax41.legend()
         plt.show()
-        print('Mean of predicted test data is {0}'.format(np.mean(new_testPredict[int((len_test_data - 2 * Order)/ 2):])))
-        print('In theory the value above is {0}'.format(transferFunc(0, belta)))
