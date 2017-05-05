@@ -39,14 +39,20 @@ def getNewConceptVal(weight, sequence):
 
 # 传递函数，暂定为 sigmoid
 def transferFunc(x, belta=1):  # todo: 换成其他函数
+    return np.tanh(x)
     return 1 / (1 + np.exp(-belta * x))
 
 
 def reverseFunc(y, belta):
-    if abs(y - 1) < 0.00001:
+    if y > 0.99999:
         y = 0.99999
-    if abs(y) < 0.00001:
-        y = 0.00001
+    elif y < -0.99999:
+        y = -0.99999
+    # elif 0 < y < 0.00001:
+    #     y = 0.00001
+    # elif -0.00001 < y < 0:
+    #     y = -0.00001
+    return np.arctanh(y)
     x = 1 / belta * np.log(y / (1 - y))
     return x
 

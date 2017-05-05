@@ -4,6 +4,7 @@ from FCMs import transferFunc, reverseFunc
 import pandas as pd
 import time
 
+
 def splitData(dataset, ratio=0.85):
     len_train_data = int(len(dataset) * ratio)
     return dataset[:len_train_data], dataset[len_train_data:]
@@ -79,14 +80,15 @@ def re_normalize(ori_data, maxV, minV, flag='01'):
 
 
 def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
-    from oct2py import octave
-    octave.addpath('/home/shanchao/octave/ltfat-2.2.0/wavelets')
-    octave.addpath('/home/shanchao/octave/ltfat-2.2.0/comp')
-    octave.addpath('/home/shanchao/octave/ltfat-2.2.0')
-    octave.addpath('/home/shanchao/octave/ltfat-2.2.0/x86_64-pc-linux-gnu-api-v50+')
+    # from oct2py import octave
+    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/wavelets')
+    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/comp')
+    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0')
+    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/x86_64-pc-linux-gnu-api-v50+')
 
+    from modwt import modwt, modwtmra, imodwt
     # dataset = pd.read_csv('AirPassengers.csv', delimiter=',').as_matrix()[:, 2]
-    normalize_style = '01'
+    normalize_style = '-01'
     dataset_copy = dataset.copy()
     dataset, maxV, minV = normalize(dataset, normalize_style)
 
@@ -111,14 +113,12 @@ def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
     # best parameters
     best_Order = -1
     best_Nc = -1
-    min_rmse = np.inf
-    for Order in range(1, 10):
+    min_nmse = np.inf
+    for Order in range(1, 25):
         for Nc in range(2, 6):
             max_level = Nc - 1
-            wavelet_type = 'db2'
-            wavelet_type = 'db2'
-            wavelet_type = 'db2'
-            U_train = octave.ufwt(train_data, wavelet_type, max_level).transpose()
+            wavelet_type = 'db6'
+            U_train = modwt(train_data, wavelet_type, max_level)
             # normalize wavelet into [0, 1]
             U_train, maxV_train_wavelet, minV_train_wavelet = normalize(U_train, normalize_style)
             # 30 independent runs
@@ -196,7 +196,7 @@ def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
                 #         U_train[i, :] = U_train[i, :] * (
                 #             maxV_train_wavelet[i, 0] - minV_train_wavelet[i, 0]) + minV_train_wavelet[i, 0]
                 # new_trainPredict = octave.iufwt(U_train[:, :].transpose(), wavelet_type, max_level)
-                new_trainPredict = octave.iufwt(trainPredict.transpose(), wavelet_type, max_level)
+                new_trainPredict = imodwt(trainPredict, wavelet_type)
                 if plot_flag:
                     # plot train data series and predicted train data series
                     fig2 = plt.figure()
@@ -209,7 +209,7 @@ def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
                 # plt.show()
 
                 # test data
-                U_test = octave.ufwt(test_data, wavelet_type, max_level).transpose()
+                U_test = modwt(test_data, wavelet_type, max_level)
 
                 U_test, maxV_test_wavelet, minV_test_wavelet = normalize(U_test, normalize_style)
                 # maxV_test_wavelet = np.zeros(shape=(Nc, 1))
@@ -247,7 +247,7 @@ def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
                 #     if np.abs(maxV_test_wavelet[i, 0] - minV_test_wavelet[i, 0]) > 0.00001:
                 #         testPredict[i, :] = (1 + testPredict[i, :] * (
                 #             maxV_test_wavelet[i, 0] - minV_test_wavelet[i, 0]) + minV_test_wavelet[i, 0]) / 2
-                new_testPredict = octave.iufwt(testPredict.transpose(), wavelet_type, max_level)
+                new_testPredict = imodwt(testPredict, wavelet_type)
 
                 if plot_flag:
                     fig4 = plt.figure()
@@ -261,18 +261,18 @@ def HFCM_ridge(dataset, ratio=0.7, plot_flag=False):
                     print(steepness)
                     plt.show()
                 if len(dataset) > 30:
-                    data_predicted = np.hstack((new_trainPredict[:, 0], new_testPredict[:, 0]))
+                    data_predicted = np.hstack((new_trainPredict[:], new_testPredict[:]))
                 else:
                     data_predicted = new_testPredict[:, 0]
                 data_predicted = re_normalize(data_predicted, maxV, minV, normalize_style)
-                mse, rmse = statistics(dataset_copy, data_predicted)
-                print("Nc -> %d, Order -> %d, rmse -> %f, min_rmse is %f" % (Nc, Order, rmse, min_rmse))
-                if rmse < min_rmse:
-                    min_rmse = rmse
+                mse, rmse, nmse = statistics(dataset_copy, data_predicted)
+                print("Nc -> %d, Order -> %d, nmse -> %f, min_nmse is %f" % (Nc, Order, nmse, min_nmse))
+                if nmse < min_nmse:
+                    min_nmse = nmse
                     best_Nc = Nc
                     best_Order = Order
             # re-normalize predicted data
-    return data_predicted, min_rmse, best_Order, best_Nc
+    return data_predicted, rmse, min_nmse, best_Order, best_Nc
 
 
 def main():
@@ -284,19 +284,19 @@ def main():
     # time = range(len(dataset))
     # #
     # data set 2: TAIEX(use 70% data as train data)
-    # TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
+    # TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')  # ratio = 0.75
     # dataset = TAIEX.values.flatten()
     # time = range(len(dataset))
     # data set 3: sunspot
-    sunspot = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()
-    dataset = sunspot[:-1, 1]
-    time = sunspot[:-1, 0]
+    # sunspot = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()
+    # dataset = sunspot[:-1, 1]
+    # time = sunspot[:-1, 0]
     # # data set 4 : MG chaos( even use 10% data as train data)
     # import scipy.io as sio
     # dataset = sio.loadmat('MG_chaos.mat')['dataset'].flatten()
-    # only use data from t=124 : t=1123  (all data previous are not in the same pattern!)
-    # dataset = dataset[123:1123]
-
+    # # # only use data from t=124 : t=1123  (all data previous are not in the same pattern!)
+    # # dataset = dataset[123:1123]
+    # # #
     # dataset = dataset[118:1118]
     # time = range(len(dataset))
     # plt.plot(dataset[500:], 'ob')
@@ -308,9 +308,11 @@ def main():
     trend data
     '''
     # linear dataset
-    # dataset = list(range(500))
+    # dataset = np.array(list(range(500)))
+    # time = range(len(dataset))
     # square dataset
-    # dataset = [i for i in np.linspace(0, 10, 100)]
+    dataset = np.array([i**2 for i in np.linspace(0, 10, 100)])
+    time = range(len(dataset))
     # dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m')
     # dataset = pd.read_csv('monthly-electricity-production-i.csv', delimiter=';', parse_dates=[0], date_parser=dateparse).as_matrix()
     # time = dataset[:, 0]
@@ -321,11 +323,11 @@ def main():
     # dataset = pd.read_csv(src, delimiter=',').as_matrix()[:, 1]
     # dataset =np.array(dataset, dtype=np.float)
     # time = range(len(dataset))
-    data_predicted, rmse, best_Order, best_Nc = HFCM_ridge(dataset, ratio=0.7)
+    data_predicted, rmse, nmse, best_Order, best_Nc = HFCM_ridge(dataset, ratio=0.75)
     # mse, rmse = statistics(dataset, data_predicted)
     print('*' * 80)
     print('best Order is %d, best Nc is %d' % (best_Order, best_Nc))
-    print('MSE is %f. RMSE is %f' % (np.power(rmse, 2), rmse))
+    print('MSE is %f. RMSE is %f, NMSE is %f' % (np.power(rmse, 2), rmse, nmse))
 
     fig4 = plt.figure()
     ax41 = fig4.add_subplot(111)
@@ -351,19 +353,25 @@ def statistics(origin, predicted):
     from sklearn.metrics import mean_squared_error
     mse = mean_squared_error(origin, predicted)
     rmse = np.sqrt(mse)
-    return mse, rmse
+    meanV = np.mean(origin)
+    dominator = np.linalg.norm(predicted - meanV, 2)
+    return mse, rmse, mse / np.power(dominator, 2)
 
 
 if __name__ == '__main__':
     main()
+    from modwt import modwt, modwtmra, imodwt
+    # import pandas as pd
+
+
     # earthTest()
     # TAIEX = pd.read_excel('2000_TAIEX.xls', sheetname='clean_v1_2000')
     # dataset = TAIEX.values.flatten()
-    # from oct2py import octave
-    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/wavelets')
-    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/comp')
-    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0')
-    # octave.addpath('/home/shanchao/octave/ltfat-2.2.0/x86_64-pc-linux-gnu-api-v50+')
+    # wt = modwt(dataset, 'db2', 5)
+    # reconstruct = imodwt(wt, 'db2')
+    # # wtmra = modwtmra(wt, 'db2')
+    # print(wt)
+    # print('Error is %f' % (np.linalg.norm(dataset - reconstruct)))
     #
     # # dataset = pd.read_csv('sunspot.csv', delimiter=';').as_matrix()
     # # dataset = dataset[:-1, 1]
