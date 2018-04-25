@@ -1,5 +1,5 @@
 # Purpose
-This project is the source code for the paper *Time Series Forecasting based on High-Order Fuzzy Cognitive Maps and Wavelet Transform*, which is now submitted to **IEEE TFS** for review.
+This project is the source code for the paper *Time Series Forecasting based on High-Order Fuzzy Cognitive Maps and Wavelet Transform*, which is now accepted for publication in **IEEE TFS**.
 
 
 # Usage
