@@ -671,7 +671,6 @@ def main():
     # sunspot = pd.read_csv(r'./datasets/monthly-lake-erie-levels-1921-19.csv', delimiter=',', parse_dates=[0],
     #                       date_parser=dateparse).as_matrix()
     # dataset = sunspot[:, 1].astype(np.float)
-    # np.savetxt('datfiles/monthly-lake-erie-levels-1921-19.dat', dataset, delimiter=',')
     # time = sunspot[:, 0]
     # ratio = 0.7674
 
