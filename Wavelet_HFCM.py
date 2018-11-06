@@ -324,13 +324,6 @@ def HFCM_ridge(dataset1, ratio=0.7, plot_flag=False):
         data_predicted = re_normalize(data_predicted, maxV, minV, normalize_style)
 
 
-        print('origin w')
-
-        w_whole = np.zeros(shape=(Nc, Nc, Order), dtype=np.float)
-
-        for j in range(Nc):
-            for i in range(Order):
-                w_whole[:, j, i] = best_W_learned[:, 2*j+i]
 
 
 
