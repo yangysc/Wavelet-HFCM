@@ -9,7 +9,17 @@ This project is the source code for the paper *Time Series Forecasting based on 
 
 
 # Requirements
-- python 3.+
-- matplotlib
-- pandas
-- numpy
+- python (3.6)
+- matplotlib (3.0.3)
+- seaborn (0.9.0)
+- pandas (0.24.2)
+- numpy (1.16.3)
+
+
+
+# Example
+
+Here is an example for MG-chaos data.
+![image](https://github.com/yangysc/Wavelet-HFCM/blob/master/outcome/MG-chaos.png)
+
+
