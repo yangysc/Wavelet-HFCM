@@ -582,7 +582,7 @@ def analyze_parameter():
         g.ax.set_position([box.x0, box.y0, box.width, box.height * 0.9])  # resize position
 
         # Put a legend to the right side
-        sns.plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
         # plt.tight_layout()
 
         plt.savefig(
