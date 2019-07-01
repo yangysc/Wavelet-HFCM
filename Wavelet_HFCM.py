@@ -573,7 +573,7 @@ def analyze_parameter():
                            'S&P500': df2[order].values,
                            'Sunspot time series': df1[order].values})
         df = pd.melt(df, id_vars=r'$N_c$', var_name="Dataset", value_name='RMSE')
-        g = sns.factorplot(x=r'$N_c$', y='RMSE', hue='Dataset',
+        g = sns.catplot(x=r'$N_c$', y='RMSE', hue='Dataset',
                            hue_order=['Sunspot time series', 'S&P500'], data=df, kind='bar',
                            legend=False, palette=sns.color_palette(["#34495e", "#95a5a6"]))
 
@@ -598,7 +598,7 @@ def analyze_parameter():
                            'Sunspot time series': df1.loc[Nc, :].values})
 
         df = pd.melt(df, id_vars='$k$', var_name="Dataset", value_name='RMSE')
-        g = sns.factorplot(x='$k$', y='RMSE', hue='Dataset',
+        g = sns.catplot(x='$k$', y='RMSE', hue='Dataset',
                            hue_order=['Sunspot time series', 'S&P500'], data=df, kind='bar',
                            legend=False, palette=sns.color_palette(["#34495e", "#95a5a6"]))
 
