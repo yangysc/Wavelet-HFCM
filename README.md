@@ -20,6 +20,6 @@ This project is the source code for the paper *Time Series Forecasting based on 
 # Example
 
 Here is an example for MG-chaos data.
-![image](https://github.com/yangysc/Wavelet-HFCM/blob/master/outcome/MG-chaos.png)
+![image](https://github.com/yangysc/Wavelet-HFCM/blob/master/Outcome_for_papers/impact_parameters/MG-chaos.png)
 
 
