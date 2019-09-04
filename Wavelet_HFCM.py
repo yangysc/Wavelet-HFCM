@@ -737,7 +737,7 @@ def main():
 
     # plot time series
     import seaborn as sns
-    plt.style.use(['seaborn-paper'])
+    plt.style.use(['ggplot', 'seaborn-paper'])
 
     fig4 = plt.figure()
     ax41 = fig4.add_subplot(111)
