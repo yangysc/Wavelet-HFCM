@@ -517,7 +517,7 @@ def analyze_paras_HFCM(dataset1, ratio=0.7):
 # analyze hyper-parameters on the performance on Wavelet-HFCM
 def analyze_parameter():
     import seaborn as sns
-    plt.style.use(['seaborn-paper'])
+    plt.style.use(['ggplot', 'seaborn-paper'])
 
     # Analyze sunspot and s&p 500 time series
 
