@@ -22,4 +22,19 @@ This project is the source code for the paper *Time Series Forecasting based on 
 Here is an example for MG-chaos data.
 ![image](https://github.com/yangysc/Wavelet-HFCM/blob/master/Outcome_for_papers/impact_parameters/MG-chaos.png)
 
+# Citation
+If you find this work useful, please cite our paper:
+```
+@article{yang2018time,
+  title={Time-series forecasting based on high-order fuzzy cognitive maps and wavelet transform},
+  author={Yang, Shanchao and Liu, Jing},
+  journal={IEEE Transactions on Fuzzy Systems},
+  volume={26},
+  number={6},
+  pages={3391--3402},
+  year={2018},
+  publisher={IEEE}
+}
+```
+
 
